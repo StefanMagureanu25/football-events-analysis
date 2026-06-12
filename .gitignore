@@ -205,3 +205,30 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# =====================================================================
+# Proiect Big Data — Football Events Analysis (specific)
+# =====================================================================
+
+# macOS
+.DS_Store
+
+# Set de date brut — se descarcă din Kaggle (vezi livrabile/...-Set_date.txt).
+# events.csv are ~173MB și depășește limita GitHub de 100MB; ginf.csv e extern.
+/data/events.csv
+/data/ginf.csv
+
+# Artefacte generate de notebook-uri la rulare (recreate complet, nu se versionează)
+/data/processed_shots/
+/data/stream_input/
+/data/stream_output/
+/data/stream_checkpoint/
+/data/stream_all_batches.csv
+/models/
+/plots/
+run_log.txt
+
+# Fișiere intermediare de build pentru documentul integrat (HTML/CSS temporare).
+# Sursa editabilă (.ipynb consolidat + .docx) rămâne versionată.
+build_proiect_consolidat/_*.html
+build_proiect_consolidat/_*.css

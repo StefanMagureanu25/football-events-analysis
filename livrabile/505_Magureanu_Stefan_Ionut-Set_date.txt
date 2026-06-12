@@ -1,0 +1,2 @@
+Numele set-ului de date : Football Events
+Link descarcare     : https://www.kaggle.com/datasets/secareanualin/football-events
