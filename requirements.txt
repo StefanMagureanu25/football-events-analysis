@@ -1,0 +1,28 @@
+# Proiect Big Data — Football Events Analysis
+# Mediu testat: Python 3.10 (Apple Silicon arm64, dar funcționează și pe Linux/Windows)
+# Instalare: pip install -r requirements.txt
+#
+# ATENȚIE: numpy e fixat la 1.x — TensorFlow 2.16.2 NU suportă numpy 2.x.
+
+# --- Procesare distribuită ---
+pyspark==4.1.2
+pyarrow==17.0.0          # necesar pentru Pandas UDF (Apache Arrow) — Cerința 5
+
+# --- Deep Learning ---
+tensorflow==2.16.2       # pe macOS arm64 pip instalează automat tensorflow-macos
+
+# --- ML clasic + numeric ---
+scikit-learn==1.7.2
+numpy==1.26.4
+pandas==2.3.3
+joblib==1.5.3            # serializarea scaler-ului — Cerința 6
+
+# --- Vizualizare ---
+matplotlib==3.10.9
+seaborn==0.13.2
+
+# --- Jupyter (rulare notebook-uri) ---
+jupyter==1.1.1
+notebook==7.5.7
+nbconvert==7.17.1
+ipykernel==7.2.0
