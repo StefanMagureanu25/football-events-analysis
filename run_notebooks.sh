@@ -48,8 +48,15 @@ if [[ ! -d "$FOLDER" ]]; then
   exit 1
 fi
 
+# Sursăm activate pentru JAVA_HOME (necesar Spark), dar apelăm Python prin cale
+# ABSOLUTĂ — nu depindem de `jupyter`/`python` din PATH (pe unele sisteme lipsesc).
 # shellcheck disable=SC1091
 source venv/bin/activate
+VENV_PY="$ROOT/venv/bin/python"
+if [[ ! -x "$VENV_PY" ]]; then
+  echo "❌ venv/bin/python lipsește. Rulează întâi ./setup_venv.sh" >&2
+  exit 1
+fi
 
 echo "================================================================"
 echo " Rulez notebook-urile din: $FOLDER/"
@@ -70,7 +77,7 @@ for name in "${ORDER[@]}"; do
   echo ""
   echo "▶  $name ..."
   t0=$(date +%s)
-  if jupyter nbconvert --to notebook --execute --inplace \
+  if "$VENV_PY" -m nbconvert --to notebook --execute --inplace \
        --ExecutePreprocessor.timeout="$TIMEOUT" "$nb" > /tmp/nb_run.log 2>&1; then
     t1=$(date +%s)
     echo "✅ $name — OK ($((t1 - t0))s)"

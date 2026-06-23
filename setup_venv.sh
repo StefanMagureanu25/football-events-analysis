@@ -113,12 +113,19 @@ else
   "$PYBIN" -m venv venv
 fi
 
-# shellcheck disable=SC1091
-source venv/bin/activate
+# Folosim Python-ul din venv prin cale ABSOLUTĂ — nu depindem de `python` din PATH
+# (pe unele sisteme `python` simplu nu există, doar python3 / python3.10).
+VENV_PY="$ROOT/venv/bin/python"
+if [[ ! -x "$VENV_PY" ]]; then
+  echo "❌ venv/bin/python lipsește — crearea venv-ului a eșuat." >&2
+  echo "   Pe Debian/Ubuntu instalează întâi: sudo apt install python3.10-venv" >&2
+  exit 1
+fi
+
 echo "▶  Actualizez pip ..."
-python -m pip install --upgrade pip >/dev/null
+"$VENV_PY" -m pip install --upgrade pip >/dev/null
 echo "▶  Instalez dependențele (poate dura câteva minute) ..."
-python -m pip install -r requirements.txt
+"$VENV_PY" -m pip install -r requirements.txt
 
 # =================================================================
 # 4. Persistă JAVA_HOME în activarea venv-ului
@@ -137,12 +144,12 @@ fi
 # 5. Kernel Jupyter + verificare
 # =================================================================
 echo "▶  Înregistrez kernel-ul Jupyter 'football-venv' ..."
-python -m ipykernel install --user --name football-venv \
+"$VENV_PY" -m ipykernel install --user --name football-venv \
   --display-name "Python (football-venv)" >/dev/null
 
 echo ""
 echo "▶  Verificare importuri cheie ..."
-python - <<'PY'
+"$VENV_PY" - <<'PY'
 import sys
 mods = ['pyspark','tensorflow','sklearn','numpy','pandas','pyarrow','matplotlib','seaborn','joblib']
 ok = True
