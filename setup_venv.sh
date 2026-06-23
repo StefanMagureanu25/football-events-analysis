@@ -22,6 +22,14 @@ echo "================================================================"
 echo " Setup COMPLET — Football Events Analysis   (OS: $OS)"
 echo "================================================================"
 
+# Pe macOS, încărcăm Homebrew în PATH-ul scriptului (shell-ul non-interactiv NU
+# citește .zshrc, deci binarele brew — inclusiv python3.10 — pot lipsi din PATH).
+if [[ "$OS" == "Darwin" ]]; then
+  for b in /opt/homebrew/bin/brew /usr/local/bin/brew; do
+    [[ -x "$b" ]] && eval "$("$b" shellenv)" && break
+  done
+fi
+
 # =================================================================
 # 1. JAVA JDK 17 (necesar pentru Apache Spark)
 # =================================================================
@@ -73,7 +81,13 @@ ensure_python() {
   if [[ "$OS" == "Darwin" ]]; then
     ensure_brew
     brew install python@3.10
-    PYBIN="python3.10"
+    # Cale explicită — brew python@3.10 e keg-only, poate să nu fie pe PATH.
+    local bp; bp="$(brew --prefix python@3.10 2>/dev/null || true)"
+    if [[ -n "$bp" && -x "$bp/bin/python3.10" ]]; then
+      PYBIN="$bp/bin/python3.10"
+    else
+      PYBIN="python3.10"
+    fi
   else
     sudo apt-get update -qq
     sudo apt-get install -y python3.10 python3.10-venv python3.10-distutils
@@ -106,21 +120,47 @@ echo "▶  Folosesc Python: $PYBIN ($($PYBIN --version 2>&1))"
 # =================================================================
 # 3. VENV + dependențe
 # =================================================================
-if [[ -d "venv" ]]; then
-  echo "▶  venv/ există deja — îl refolosesc."
+# Creează venv-ul și întoarce 0 doar dacă venv/bin/python a fost creat efectiv.
+# Afișează eroarea reală (nu o înghite) — utilă la diagnoză.
+create_venv() {
+  rm -rf venv
+  local out
+  out="$("$PYBIN" -m venv venv 2>&1)"
+  if [[ -x "$ROOT/venv/bin/python" ]]; then
+    return 0
+  fi
+  [[ -n "$out" ]] && echo "$out" | sed 's/^/     /'
+  return 1
+}
+
+if [[ -d "venv" && -x "$ROOT/venv/bin/python" ]]; then
+  echo "▶  venv/ există deja și e valid — îl refolosesc."
 else
-  echo "▶  Creez venv/ ..."
-  "$PYBIN" -m venv venv
+  echo "▶  Creez venv/ cu $PYBIN ..."
+  if ! create_venv; then
+    # Cauza tipică pe Debian/Ubuntu: lipsește pachetul pythonX.Y-venv.
+    PYVER="$("$PYBIN" -c 'import sys;print(f"{sys.version_info.major}.{sys.version_info.minor}")' 2>/dev/null || echo "3.10")"
+    if [[ "$OS" != "Darwin" ]]; then
+      echo "⚠️  Crearea a eșuat — instalez pachetul python${PYVER}-venv și reîncerc ..."
+      sudo apt-get update -qq
+      sudo apt-get install -y "python${PYVER}-venv" "python${PYVER}-distutils" 2>/dev/null \
+        || sudo apt-get install -y "python${PYVER}-venv"
+      if ! create_venv; then
+        echo "❌ Crearea venv-ului tot a eșuat. Rulează manual și trimite-mi eroarea:" >&2
+        echo "     $PYBIN -m venv venv" >&2
+        exit 1
+      fi
+    else
+      echo "❌ Crearea venv-ului a eșuat pe macOS. Încearcă:" >&2
+      echo "     brew reinstall python@${PYVER}   (apoi rulează din nou ./setup_venv.sh)" >&2
+      exit 1
+    fi
+  fi
 fi
 
-# Folosim Python-ul din venv prin cale ABSOLUTĂ — nu depindem de `python` din PATH
-# (pe unele sisteme `python` simplu nu există, doar python3 / python3.10).
+# Folosim Python-ul din venv prin cale ABSOLUTĂ — nu depindem de `python` din PATH.
 VENV_PY="$ROOT/venv/bin/python"
-if [[ ! -x "$VENV_PY" ]]; then
-  echo "❌ venv/bin/python lipsește — crearea venv-ului a eșuat." >&2
-  echo "   Pe Debian/Ubuntu instalează întâi: sudo apt install python3.10-venv" >&2
-  exit 1
-fi
+echo "▶  venv OK: $("$VENV_PY" --version 2>&1)"
 
 echo "▶  Actualizez pip ..."
 "$VENV_PY" -m pip install --upgrade pip >/dev/null
